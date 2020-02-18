@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.autograd import Variable
 from torchvision import datasets, transforms
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class MnistModel(nn.Module):
@@ -35,7 +36,7 @@ class MnistModel(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-model = MnistModel()
+model = MnistModel().to(device)
 print(model)
 
 
@@ -60,7 +61,7 @@ train_accu = []
 i = 0
 for epoch in range(15):
     for data, target in train_loader:
-        data, target = Variable(data), Variable(target)
+        data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
@@ -84,7 +85,7 @@ plt.plot(np.arange(len(train_accu)), train_accu)
 model.eval()
 correct = 0
 for data, target in test_loader:
-    data, target = Variable(data, volatile=True), Variable(target)
+    data, target = data.to(device), target.to(device)
     output = model(data)
     prediction = output.data.max(1)[1]
     # correct += prediction.eq(target.data).sum()
