@@ -31,7 +31,8 @@ class MnistModel(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
-        return F.log_softmax(x)
+        # https://discuss.pytorch.org/t/implicit-dimension-choice-for-softmax-warning/12314/8
+        return F.log_softmax(x, dim=1)
 
 
 model = MnistModel()
@@ -64,14 +65,16 @@ for epoch in range(15):
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()    # calc gradients
-        train_loss.append(loss.data[0])
+        train_loss.append(loss.data)
         optimizer.step()   # update gradients
         prediction = output.data.max(1)[1]   # first column has actual prob.
-        accuracy = prediction.eq(target.data).sum()/batch_size*100
+        # accuracy = prediction.eq(target.data).sum()/batch_size*100
+        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
+        accuracy = (prediction == target).sum().item()/batch_size*100
         train_accu.append(accuracy)
         if i % 1000 == 0:
             print('Train Step: {}\tLoss: {:.3f}\tAccuracy: {:.3f}'.format(
-                i, loss.data[0], accuracy))
+                i, loss.data, accuracy))
         i += 1
 
 plt.plot(np.arange(len(train_loss)), train_loss)
@@ -84,7 +87,8 @@ for data, target in test_loader:
     data, target = Variable(data, volatile=True), Variable(target)
     output = model(data)
     prediction = output.data.max(1)[1]
-    correct += prediction.eq(target.data).sum()
+    # correct += prediction.eq(target.data).sum()
+    correct += (prediction == target).sum().item()
 
 print('\nTest set: Accuracy: {:.2f}%'.format(
     100. * correct / len(test_loader.dataset)))
